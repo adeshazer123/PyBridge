@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QFont
 from ChipPosition import SiChipPosition
-from example_controller import MicroscopeControl
+from pybridge.GUI.MicroscopeController import MicroscopeControl
 
 class Positioner_Matrix(QtWidgets.QWidget):
     def __init__(self):
