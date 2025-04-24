@@ -6,7 +6,7 @@ from ophyd import Component as Cpt
 from ophyd import Signal, Device, PVPositioner, SignalRO
 from ophyd.status import MoveStatus
 from pybridge.csv_convert_parent import csv_convert_parent
-from pybridge.hardware_bridge.sbis26_VISADriver import SBIS26VISADrivers
+from pybridge.hardware_bridge.sbis26_VISADriver import SBIS26VISADriver
 
 class SBISMoveBridge(PVPositioner):
     setpoint = Cpt(Signal) #target position
@@ -45,7 +45,7 @@ class SBISMoveBridge(PVPositioner):
             parent=parent,
             **kwargs,
         )
-        self.sbis = SBIS26VISADrivers(driver)
+        self.sbis = SBIS26VISADriver(driver)
         self.readback.get = self.get_position
         self.setpoint.put = self.move
 
@@ -54,7 +54,7 @@ class SBISMoveBridge(PVPositioner):
         return self.sbis.get_position(self.axis_component.get())
     
     def move(self, position: float, wait=True, timeout=None):
-        value = self.sbis.move(self.setpoint.get(), self.axis_component.get())
+        value = self.sbis.move(position, self.axis_component.get())
         print(value)
         status = MoveStatus(self, target = position, timeout = timeout, settle_time = self._settle_time)
         if value == 1: 
@@ -67,4 +67,21 @@ class SBISMoveBridge(PVPositioner):
         return status
     
     def move_relative(self, position):
-        pass
+        target_position = self.readback.get() + position
+        self.sbis.move_relative(target_position, self.axis_component.get())
+    
+    def home(self):
+        """Home the stage."""
+        self.sbis.home(self.axis_component.get())
+        self.done.put(value = True)
+    
+    def stop(self):
+        """Stop the stage."""
+        self.sbis.stop(self.axis_component.get())
+        self.done.put(value = False)
+        self.setpoint.put(self.readback.get())
+
+    def close(self):
+        """Close the stage."""
+        self.sbis.close()
+        self.done.put(value = False)
