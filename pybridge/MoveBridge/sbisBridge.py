@@ -19,10 +19,8 @@ class SBISMoveBridge(PVPositioner):
     speed_ini = Cpt(Signal, value=2000, kind="config")
     speed_fin = Cpt(Signal, value=20000, kind="config")
     accel_t = Cpt(Signal, value=100, kind="config")
-    # store_position = Cpt(Signal, value=0.0, kind="hinted")
     loop = Cpt(Signal, value=0, kind="config")
     unit = Cpt(Signal, value="um", kind="config")
-    # DK add done and done_value property
 
     def __init__(
         self,
@@ -77,11 +75,48 @@ class SBISMoveBridge(PVPositioner):
     
     def stop(self):
         """Stop the stage."""
-        self.sbis.stop(self.axis_component.get())
+        self.sbis.stop()
         self.done.put(value = False)
-        self.setpoint.put(self.readback.get())
 
     def close(self):
         """Close the stage."""
         self.sbis.close()
         self.done.put(value = False)
+
+class SBISAxis(SBISMoveBridge):
+    def __init__(
+        self,
+        prefix="",
+        *,
+        limits=None,
+        name=None,
+        read_attrs=None,
+        configuration_attrs=None,
+        parent=None,
+        egu="",
+        axis = 1,
+        driver = None,
+        **kwargs,
+    ):
+        super().__init__(
+            prefix=prefix,
+            read_attrs=read_attrs,
+            configuration_attrs=configuration_attrs,
+            name=name,
+            parent=parent,
+            driver=driver,
+            **kwargs,
+        )
+        self.sbis = driver
+
+    def move(self, position):
+        """Move the stage to the specified position."""
+        self.sbis.move(position, self.axis_component.get())
+        self.done.put(value = True)
+    
+    def move_relative(self, position):
+        return super().move_relative(position)
+    
+    def home(self)L
+        """Home the stage."""
+        super().home()

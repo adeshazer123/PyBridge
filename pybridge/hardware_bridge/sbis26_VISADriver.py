@@ -12,6 +12,7 @@ class SBIS26VISADriver:
         self.speed_fin = [-1, -1, -1]
         self.accel_t = [-1, -1, -1]
         self.position = [0, 0, 0]
+        self.sbis.connect()
 
     def connect(self):
         """Initializes the stage."""
