@@ -1,6 +1,7 @@
 import time
 import pyvisa
-# logger = set_logger(get_module_name(__file__))
+import logging
+logger = logging.getLogger(__name__)
 
 class SBIS26VISADriver:
     """VISA class driver for the OptoSigma stage SBIS26."""
@@ -12,7 +13,7 @@ class SBIS26VISADriver:
         self.speed_fin = [-1, -1, -1]
         self.accel_t = [-1, -1, -1]
         self.position = [0, 0, 0]
-        self.sbis.connect()
+        self.connect()
 
     def connect(self):
         """Initializes the stage."""
@@ -80,7 +81,7 @@ class SBIS26VISADriver:
         Args:
             position (int): Position to move the stage to.
             channel (int): Channel of the stage.
-
+ 
          """
         if position >= 0:
             value = self._stage.query(f"A:D,{channel},+{position}")
