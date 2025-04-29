@@ -7,21 +7,23 @@ from ophyd import Signal, Device, PVPositioner, SignalRO
 from ophyd.status import MoveStatus
 from pybridge.csv_convert_parent import csv_convert_parent
 from pybridge.hardware_bridge.sbis26_VISADriver import SBIS26VISADriver
-
+ 
 class SBISMoveBridge(PVPositioner):
     setpoint = Cpt(Signal) #target position
     readback = Cpt(SignalRO) #Read position
     done = Cpt(Signal, value = False) #Instrument is done moving
     actuate = Cpt(Signal) #Request to move
     stop_signal =  Cpt(Signal) #Request to stop
-
+ 
     axis_component = Cpt(Signal, value=1, kind="config")
     speed_ini = Cpt(Signal, value=2000, kind="config")
     speed_fin = Cpt(Signal, value=20000, kind="config")
     accel_t = Cpt(Signal, value=100, kind="config")
+    # store_position = Cpt(Signal, value=0.0, kind="hinted")
     loop = Cpt(Signal, value=0, kind="config")
     unit = Cpt(Signal, value="um", kind="config")
-
+    # DK add done and done_value property
+ 
     def __init__(
         self,
         prefix="",
@@ -43,45 +45,48 @@ class SBISMoveBridge(PVPositioner):
             parent=parent,
             **kwargs,
         )
-        self.sbis = SBIS26VISADriver(driver)
+        if isinstance(driver, SBIS26VISADriver):
+            self.sbis = driver
+        elif driver is not None:
+            self.sbis = SBIS26VISADriver(driver)
+        else:
+            raise ValueError("Not correct connection to SBIS")
+
         self.readback.get = self.get_position
         self.setpoint.put = self.move
-
+ 
     def get_position(self):
         """Get the current position of the stage."""
         return self.sbis.get_position(self.axis_component.get())
-    
+   
     def move(self, position: float, wait=True, timeout=None):
         value = self.sbis.move(position, self.axis_component.get())
         print(value)
         status = MoveStatus(self, target = position, timeout = timeout, settle_time = self._settle_time)
-        if value == 1: 
+        if value == 1:
             self.done.put(value = True) #shrc successfully moved
             print("done true")
-        else: 
+        else:
             self.done.put(value = False)
             print("done false")
         status.set_finished()
         return status
-    
-    def move_relative(self, position):
-        target_position = self.readback.get() + position
-        self.sbis.move_relative(target_position, self.axis_component.get())
-    
+
     def home(self):
         """Home the stage."""
         self.sbis.home(self.axis_component.get())
         self.done.put(value = True)
-    
+   
     def stop(self):
         """Stop the stage."""
         self.sbis.stop()
         self.done.put(value = False)
-
+        # self.setpoint.put(self.readback.get())
+ 
     def close(self):
         """Close the stage."""
         self.sbis.close()
-        self.done.put(value = False)
+        self.done.put(value = False)    
 
 class SBISAxis(SBISMoveBridge):
     def __init__(
@@ -94,8 +99,8 @@ class SBISAxis(SBISMoveBridge):
         configuration_attrs=None,
         parent=None,
         egu="",
-        axis = 1,
         driver = None,
+        axis = 1, 
         **kwargs,
     ):
         super().__init__(
@@ -104,19 +109,29 @@ class SBISAxis(SBISMoveBridge):
             configuration_attrs=configuration_attrs,
             name=name,
             parent=parent,
-            driver=driver,
+            driver = driver,
             **kwargs,
         )
         self.sbis = driver
-
-    def move(self, position):
+        self.axis = axis
+ 
+    def move(self, position: float, wait=True, timeout=None):
         """Move the stage to the specified position."""
-        self.sbis.move(position, self.axis_component.get())
-        self.done.put(value = True)
-    
+        value = self.sbis.move(position, self.axis)
+        status = MoveStatus(self, target = position, timeout = timeout, settle_time = self._settle_time)
+        if value == 1: 
+            self.done.put(value = True)
+        else:
+            self.done.put(value = False)
+        status.set_finished()
+        return status
+
+   
     def move_relative(self, position):
-        return super().move_relative(position)
-    
-    def home(self)L
-        """Home the stage."""
-        super().home()
+        """Move the stage to the relative """
+        self.sbis.move_relative(position, self.axis) 
+
+    def get_position(self):
+        return self.sbis.get_position(self.axis)  
+    def home(self):
+        self.sbis.home(self.axis)   
