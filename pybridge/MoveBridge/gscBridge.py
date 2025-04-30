@@ -15,7 +15,6 @@ class GSCMoveBridge(PVPositioner):
     speed_ini = Cpt(Signal, value=2000, kind="config")
     speed_fin = Cpt(Signal, value=20000, kind="config")
     accel_t = Cpt(Signal, value=100, kind="config")
-    # store_position = Cpt(Signal, value=0.0, kind="hinted")
     loop = Cpt(Signal, value=0, kind="config")
     unit = Cpt(Signal, value="um", kind="config")
 

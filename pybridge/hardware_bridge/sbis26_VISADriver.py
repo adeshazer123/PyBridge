@@ -25,8 +25,6 @@ class SBIS26VISADriver:
         self._stage.stop_bits = pyvisa.constants.StopBits.one
         self._stage.flow_control.rts_cts = False #check documentation if true 
         self._stage.read_termination = '\r\n'
-        # self._stage.write_termination = '\n'
-        # self._stage.query("*IDN?")
         self._stage.query("#CONNECT:")
 
     def check_error(self, channel):
